@@ -1,0 +1,5 @@
+---
+- import_playbook: nfs.yml
+- import_playbook: nginx.yml
+- import_playbook: rsync.yml
+- import_playbook: sersync.yml

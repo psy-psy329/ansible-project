@@ -1,0 +1,68 @@
+---
+- name: rsync服务端部署
+  hosts: nfs
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: 安装rsync
+      yum:
+        name: rsync
+        state: installed
+    - name: 创建rsync虚拟用户
+      user:
+        name: rsync
+        shell: /sbin/nologin
+        create_home: no
+    - name: 配置rsyncd.conf
+      copy:
+        content: |
+          fake super = yes
+          uid = rsync
+          gid = rsync
+          use chroot = no
+          max connections = 2000
+          timeout = 600
+          pid file = /var/run/rsyncd.pid
+          lock file = /var/run/rsync.lock
+          log file = /var/log/rsyncd.log
+          ignore errors
+          read only = false
+          list = false
+          hosts allow = {{ web_subnet }}
+          auth users = {{ rsync_auth_user }}
+          secrets file = /etc/rsync.password
+          [backup]
+          comment = by backup
+          path = {{ nfs_share_dir }}
+        dest: /etc/rsyncd.conf
+    - name: 创建密码文件
+      copy:
+        content: "{{ rsync_auth_user }}:{{ rsync_password }}"
+        dest: /etc/rsync.password
+        mode: '0600'
+    - name: 创建共享目录
+      file:
+        path: "{{ nfs_share_dir }}"
+        state: directory
+        owner: rsync
+        group: rsync
+    - name: 启动并开机自启rsyncd
+      service:
+        name: rsyncd
+        state: started
+        enabled: yes
+
+- name: rsync客户端配置
+  hosts: web
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: 安装rsync
+      yum:
+        name: rsync
+        state: installed
+    - name: 客户端密码文件
+      copy:
+        content: "{{ rsync_password }}"
+        dest: /etc/rsync.pass
+        mode: '0600'

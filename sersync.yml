@@ -1,0 +1,54 @@
+---
+- name: sersync客户端部署
+  hosts: web
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: 安装依赖
+      yum:
+        name:
+          - rsync
+          - inotify-tools
+        state: installed
+    - name: 解压sersync到/usr/local
+      unarchive:
+        src: /tmp/sersync.tar.gz   # 注意：你需要提前把 sersync.tar.gz 放到 files/ 目录，并改成 src: files/sersync.tar.gz
+        dest: /usr/local/
+        remote_src: no
+    - name: 配置sersync confxml.xml
+      copy:
+        content: |
+          <?xml version="1.0" encoding="ISO-8859-1"?>
+          <head version="2.5">
+              <host hostip="localhost" port="8008"></host>
+              <debug start="false"/>
+              <fileSystem xfs="false"/>
+              <filter start="false">
+                  <exclude expression="(.*)\.svn"></exclude>
+                  <exclude expression="(.*)\.gz"></exclude>
+              </filter>
+              <inotify>
+                  <delete start="true"/>
+                  <createFolder start="true"/>
+                  <closeWrite start="true"/>
+                  <moveFrom start="true"/>
+                  <moveTo start="true"/>
+              </inotify>
+              <sersync>
+                  <localpath watch="{{ web_mount_point }}">
+                      <remote ip="{{ rsync_server_ip }}" name="backup"/>
+                  </localpath>
+                  <rsync>
+                      <commonParams params="-az"/>
+                      <auth start="true" users="{{ rsync_auth_user }}" passwordfile="/etc/rsync.pass"/>
+                  </rsync>
+              </sersync>
+          </head>
+        dest: /usr/local/sersync/confxml.xml
+    - name: 创建软链接
+      file:
+        src: /usr/local/sersync/sersync2
+        dest: /bin/sersync2
+        state: link
+    - name: 启动sersync
+      shell: sersync2 -rdo /usr/local/sersync/confxml.xml

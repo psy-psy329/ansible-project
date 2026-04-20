@@ -1,0 +1,44 @@
+---
+- name: nginx部署剧本
+  hosts: web
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: 安装nginx
+      yum:
+        name: nginx
+        state: installed
+    - name: 创建网站代码文件夹
+      file:
+        path: /web
+        state: directory
+        mode: '0755'
+    - name: 编写 Nginx 配置文件
+      copy:
+        dest: /etc/nginx/conf.d/web.conf
+        content: |
+          server {
+              listen 80;
+              server_name _;
+              root /web;
+              index web.html;
+          }
+        mode: '0644'
+      notify: restart nginx
+    - name: 将代码文件传入指定文件夹中
+      copy:
+        src: files/web.html          # 路径相对于 playbook 所在目录
+        dest: /web/web.html
+        mode: '0644'
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: yes
+         
+
+
+
+
+

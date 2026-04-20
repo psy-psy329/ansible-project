@@ -1,0 +1,52 @@
+---
+- name: nfs服务端部署
+  hosts: nfs
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: 安装nfs-utils,rpcbind
+      yum:
+        name: nfs-utils,rpcbind
+        state: installed
+    - name: 修改配置文件
+      lineinfile:
+        path: /etc/exports
+        regexp: '^{{ nfs_share_dir }}'
+        line: "{{ nfs_share_dir }}  {{ web_subnet }}(rw)"
+    - name: 创建共享目录并更改所有者
+      file:
+        path: "{{ nfs_share_dir }}"
+        state: directory
+        owner: nfsnobody
+        group: nfsnobody
+    - name: 启动rpcbind
+      systemd:
+        name: rpcbind
+        enabled: yes
+        state: started
+    - name: 启动nfs
+      systemd:
+        name: nfs
+        enabled: yes
+        state: started
+
+- name: nfs客户端部署（web组）
+  hosts: web
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: 安装nfs-utils
+      yum:
+        name: nfs-utils
+        state: installed
+    - name: 创建挂载点
+      file:
+        path: "{{ web_mount_point }}"
+        state: directory
+    - name: 挂载NFS
+      mount:
+        src: "{{ nfs_server_ip }}:{{ nfs_share_dir }}"
+        path: "{{ web_mount_point }}"
+        fstype: nfs
+        opts: defaults
+        state: mounted

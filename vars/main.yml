@@ -1,0 +1,13 @@
+---
+# NFS 服务器配置
+nfs_server_ip: 192.168.100.20   # 改成你 nfs 虚拟机的 IP
+nfs_share_dir: /backup
+web_mount_point: /ans_upload
+
+# 网络配置
+web_subnet: 192.168.100.0/24
+
+# rsync 服务器配置
+rsync_server_ip: 192.168.100.20
+rsync_auth_user: rsync_backup
+rsync_password: "123456"   # 注意：实际使用中请设置更复杂的密码，并妥善保管
