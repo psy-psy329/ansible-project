@@ -1,6 +1,6 @@
 ---
 - name: sersync客户端部署
-  hosts: web
+  hosts: nfs
   vars_files:
     - vars/main.yml
   tasks:

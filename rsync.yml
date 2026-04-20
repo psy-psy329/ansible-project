@@ -1,6 +1,6 @@
 ---
 - name: rsync服务端部署
-  hosts: nfs
+  hosts: backup
   vars_files:
     - vars/main.yml
   tasks:
